@@ -46,6 +46,7 @@
 // If zero, the outputWidth is set to 1/2 the width of the input image, and
 // outputHeight is the same as the height of the input image.
 int outputWidth, outputHeight;
+std::string leftCameraInfoURL, rightCameraInfoURL;
 
 // Input image subscriber.
 ros::Subscriber imageSub;
@@ -135,13 +136,17 @@ int main(int argc, char** argv)
 
     image_transport::ImageTransport it(nh);
 
+    // load the camera info
+    nh.param("left_camera_info_url", leftCameraInfoURL, std::string(""));
+    ROS_INFO("left_camera_info_url=%s\n", leftCameraInfoURL.c_str());
+    nh.param("right_camera_info_url", rightCameraInfoURL, std::string(""));
+    ROS_INFO("right_camera_info_url=%s\n", rightCameraInfoURL.c_str());
+
     // Allocate and initialize camera info managers.
-    left_cinfo_ =
-        new camera_info_manager::CameraInfoManager(nh_left);
-    right_cinfo_ =
-        new camera_info_manager::CameraInfoManager(nh_right);
-    left_cinfo_->loadCameraInfo("");
-    right_cinfo_->loadCameraInfo("");
+    left_cinfo_ = new camera_info_manager::CameraInfoManager(nh_left);
+    right_cinfo_ = new camera_info_manager::CameraInfoManager(nh_right);
+    left_cinfo_->loadCameraInfo(leftCameraInfoURL);
+    right_cinfo_->loadCameraInfo(rightCameraInfoURL);
 
     // Pre-fill camera_info messages.
     leftCameraInfoMsg = left_cinfo_->getCameraInfo();
