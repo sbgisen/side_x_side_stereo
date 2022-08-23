@@ -117,10 +117,11 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
             || rightCameraInfoPublisher.getNumSubscribers() > 0)
         {
             cvImage.image = use_scaled ? rightScaled : rightImage;
+            cvImage.header.frame_id = "insta360_rear_color_optical_frame";
             img = cvImage.toImageMsg();
             rightImagePublisher.publish(img);
             rightCameraInfoMsg.header.stamp = img->header.stamp;
-            rightCameraInfoMsg.header.frame_id = img->header.frame_id;
+            rightCameraInfoMsg.header.frame_id = "insta360_rear_color_optical_frame";
             rightCameraInfoPublisher.publish(rightCameraInfoMsg);
         }
     }
@@ -130,7 +131,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "sxs_stereo");
-    ros::NodeHandle nh("sxs_stereo");
+    ros::NodeHandle nh("~");
     ros::NodeHandle nh_left(nh, "left");
     ros::NodeHandle nh_right(nh, "right");
 
