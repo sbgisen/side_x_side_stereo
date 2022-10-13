@@ -45,84 +45,81 @@
 // If non-zero, outputWidth and outputHeight set the size of the output images.
 // If zero, the outputWidth is set to 1/2 the width of the input image, and
 // outputHeight is the same as the height of the input image.
-int outputWidth, outputHeight;
-std::string leftCameraInfoURL, rightCameraInfoURL;
-std::string leftFrame, rightFrame;
+int OUTPUT_WIDTH, OUTPUT_HEIGHT;
+std::string LEFT_CAMERA_INFO_URL, RIGHT_CAMERA_INFO_URL;
+std::string LEFT_FRAME, RIGHT_FRAME;
 
 // Input image subscriber.
-ros::Subscriber imageSub;
+ros::Subscriber IMAGE_SUB;
 
 // Left and right image publishers.
-image_transport::Publisher leftImagePublisher, rightImagePublisher;
+image_transport::Publisher LEFT_IMAGE_PUBLISHER, RIGHT_IMAGE_PUBLISHER;
 
 // Left and right camera info publishers and messages.
-ros::Publisher leftCameraInfoPublisher, rightCameraInfoPublisher;
-sensor_msgs::CameraInfo leftCameraInfoMsg, rightCameraInfoMsg;
+ros::Publisher LEFT_CAMERA_INFO_PUBLISHER, RIGHT_CAMERA_INFO_PUBLISHER;
+sensor_msgs::CameraInfo LEFT_CAMERA_INFO_MSG, RIGHT_CAMERA_INFO_MSG;
 
 // Image capture callback.
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
     // Get double camera image.
-    cv_bridge::CvImagePtr cvImg = cv_bridge::toCvCopy(msg, msg->encoding);
-    cv::Mat image = cvImg->image;
+    cv_bridge::CvImagePtr cv_img = cv_bridge::toCvCopy(msg, msg->encoding);
+    cv::Mat image = cv_img->image;
 
     // If there are any subscribers to either output topic then publish images
     // on them.
-    if (leftImagePublisher.getNumSubscribers() > 0 ||
-        rightImagePublisher.getNumSubscribers() > 0)
+    if (LEFT_IMAGE_PUBLISHER.getNumSubscribers() > 0 || RIGHT_IMAGE_PUBLISHER.getNumSubscribers() > 0)
     {
         // Define the relevant rectangles to crop.
-        cv::Rect leftROI, rightROI;
-        leftROI.y = rightROI.y = 0;
-        leftROI.width = rightROI.width = image.cols / 2;
-        leftROI.height = rightROI.height = image.rows;
-        leftROI.x = 0;
-        rightROI.x = image.cols / 2;
+        cv::Rect left_roi, right_roi;
+        left_roi.y = right_roi.y = 0;
+        left_roi.width = right_roi.width = image.cols / 2;
+        left_roi.height = right_roi.height = image.rows;
+        left_roi.x = 0;
+        right_roi.x = image.cols / 2;
 
         // Crop images.
-        cv::Mat leftImage = cv::Mat(image, leftROI);
-        cv::Mat rightImage = cv::Mat(image, rightROI);
+        cv::Mat left_image = cv::Mat(image, left_roi);
+        cv::Mat right_image = cv::Mat(image, right_roi);
 
         // Apply scaling, if specified.
         bool use_scaled;
-        cv::Mat leftScaled, rightScaled;
-        if (use_scaled = (outputWidth > 0 && outputHeight > 0))
+        cv::Mat left_scaled, right_scaled;
+        if (use_scaled = (OUTPUT_WIDTH > 0 && OUTPUT_HEIGHT > 0))
         {
-            cv::Size sz = cv::Size(outputWidth, outputHeight);
-            cv::resize(leftImage, leftScaled, sz);
-            cv::resize(rightImage, rightScaled, sz);
+          cv::Size sz = cv::Size(OUTPUT_WIDTH, OUTPUT_HEIGHT);
+          cv::resize(left_image, left_scaled, sz);
+          cv::resize(right_image, right_scaled, sz);
         }
 
         // Publish.
-        cv_bridge::CvImage cvImage;
+        cv_bridge::CvImage cv_image;
         sensor_msgs::ImagePtr img;
-        cvImage.encoding = msg->encoding;
-        cvImage.header.stamp = msg->header.stamp;
-        if (leftImagePublisher.getNumSubscribers() > 0
-            || leftCameraInfoPublisher.getNumSubscribers() > 0)
+        cv_image.encoding = msg->encoding;
+        cv_image.header.stamp = msg->header.stamp;
+        if (LEFT_IMAGE_PUBLISHER.getNumSubscribers() > 0 || LEFT_CAMERA_INFO_PUBLISHER.getNumSubscribers() > 0)
         {
-            if(leftFrame.empty())
-                leftFrame = msg->header.frame_id;
-            cvImage.image = use_scaled ? leftScaled : leftImage;
-            cvImage.header.frame_id = leftFrame;
-            img = cvImage.toImageMsg();
-            leftImagePublisher.publish(img);
-            leftCameraInfoMsg.header.stamp = img->header.stamp;
-            leftCameraInfoMsg.header.frame_id = leftFrame;
-            leftCameraInfoPublisher.publish(leftCameraInfoMsg);
+          if (LEFT_FRAME.empty())
+            LEFT_FRAME = msg->header.frame_id;
+          cv_image.image = use_scaled ? left_scaled : left_image;
+          cv_image.header.frame_id = LEFT_FRAME;
+          img = cv_image.toImageMsg();
+          LEFT_IMAGE_PUBLISHER.publish(img);
+          LEFT_CAMERA_INFO_MSG.header.stamp = img->header.stamp;
+          LEFT_CAMERA_INFO_MSG.header.frame_id = LEFT_FRAME;
+          LEFT_CAMERA_INFO_PUBLISHER.publish(LEFT_CAMERA_INFO_MSG);
         }
-        if (rightImagePublisher.getNumSubscribers() > 0
-            || rightCameraInfoPublisher.getNumSubscribers() > 0)
+        if (RIGHT_IMAGE_PUBLISHER.getNumSubscribers() > 0 || RIGHT_CAMERA_INFO_PUBLISHER.getNumSubscribers() > 0)
         {
-            if(rightFrame.empty())
-                rightFrame = msg->header.frame_id;
-            cvImage.image = use_scaled ? rightScaled : rightImage;
-            cvImage.header.frame_id = rightFrame;
-            img = cvImage.toImageMsg();
-            rightImagePublisher.publish(img);
-            rightCameraInfoMsg.header.stamp = img->header.stamp;
-            rightCameraInfoMsg.header.frame_id = rightFrame;
-            rightCameraInfoPublisher.publish(rightCameraInfoMsg);
+          if (RIGHT_FRAME.empty())
+            RIGHT_FRAME = msg->header.frame_id;
+          cv_image.image = use_scaled ? right_scaled : right_image;
+          cv_image.header.frame_id = RIGHT_FRAME;
+          img = cv_image.toImageMsg();
+          RIGHT_IMAGE_PUBLISHER.publish(img);
+          RIGHT_CAMERA_INFO_MSG.header.stamp = img->header.stamp;
+          RIGHT_CAMERA_INFO_MSG.header.frame_id = RIGHT_FRAME;
+          RIGHT_CAMERA_INFO_PUBLISHER.publish(RIGHT_CAMERA_INFO_MSG);
         }
     }
 }
@@ -135,53 +132,46 @@ int main(int argc, char** argv)
     image_transport::ImageTransport it(nh);
 
     // load the camera info
-    nh.param("left_camera_info_url", leftCameraInfoURL, std::string(""));
-    ROS_INFO("left_camera_info_url=%s\n", leftCameraInfoURL.c_str());
-    nh.param("left_frame", leftFrame, std::string(""));
-    nh.param("right_camera_info_url", rightCameraInfoURL, std::string(""));
-    ROS_INFO("right_camera_info_url=%s\n", rightCameraInfoURL.c_str());
-    nh.param("right_frame", rightFrame, std::string(""));
+    nh.param("left_camera_info_url", LEFT_CAMERA_INFO_URL, std::string(""));
+    ROS_INFO("left_camera_info_url=%s\n", LEFT_CAMERA_INFO_URL.c_str());
+    nh.param("left_frame", LEFT_FRAME, std::string(""));
+    nh.param("right_camera_info_url", RIGHT_CAMERA_INFO_URL, std::string(""));
+    ROS_INFO("right_camera_info_url=%s\n", RIGHT_CAMERA_INFO_URL.c_str());
+    nh.param("right_frame", RIGHT_FRAME, std::string(""));
 
     // Load node settings.
-    std::string inputImageTopic, leftOutputImageTopic, rightOutputImageTopic,
-        leftCameraInfoTopic, rightCameraInfoTopic, leftCameraInfoManager, rightCameraInfoManager;
-    nh.param("input_image_topic", inputImageTopic, 
-        std::string("input_image_topic_not_set"));
-    ROS_INFO("input topic to stereo splitter=%s\n", inputImageTopic.c_str());
-    nh.param("left_output_image_topic", leftOutputImageTopic,
-        std::string("left/image_raw"));
-    nh.param("right_output_image_topic", rightOutputImageTopic,
-        std::string("right/image_raw"));
-    nh.param("left_camera_info_topic", leftCameraInfoTopic,
-        std::string("left/camera_info"));
-    nh.param("right_camera_info_topic", rightCameraInfoTopic,
-        std::string("right/camera_info"));
-    nh.param("left_camera_info_manager_ns", leftCameraInfoManager, std::string("~/left"));
-    nh.param("right_camera_info_manager_ns", rightCameraInfoManager, std::string("~/right"));
-    nh.param("output_width", outputWidth, 0);  // 0 -> use 1/2 input width.
-    nh.param("output_height", outputHeight, 0);  // 0 -> use input height.
+    std::string input_image_topic, left_output_image_topic, right_output_image_topic, left_camera_info_topic,
+        right_camera_info_topic, left_camera_info_manager, right_camera_info_manager;
+    nh.param("input_image_topic", input_image_topic, std::string("input_image_topic_not_set"));
+    ROS_INFO("input topic to stereo splitter=%s\n", input_image_topic.c_str());
+    nh.param("left_output_image_topic", left_output_image_topic, std::string("left/image_raw"));
+    nh.param("right_output_image_topic", right_output_image_topic, std::string("right/image_raw"));
+    nh.param("left_camera_info_topic", left_camera_info_topic, std::string("left/camera_info"));
+    nh.param("right_camera_info_topic", right_camera_info_topic, std::string("right/camera_info"));
+    nh.param("left_camera_info_manager_ns", left_camera_info_manager, std::string("~/left"));
+    nh.param("right_camera_info_manager_ns", right_camera_info_manager, std::string("~/right"));
+    nh.param("output_width", OUTPUT_WIDTH, 0);    // 0 -> use 1/2 input width.
+    nh.param("output_height", OUTPUT_HEIGHT, 0);  // 0 -> use input height.
 
     // Register publishers and subscriber.
-    imageSub = nh.subscribe(inputImageTopic.c_str(), 2, &imageCallback);
-    leftImagePublisher = it.advertise(leftOutputImageTopic.c_str(), 5);
-    rightImagePublisher = it.advertise(rightOutputImageTopic.c_str(), 5);
-    leftCameraInfoPublisher = nh.advertise<sensor_msgs::CameraInfo>
-        (leftCameraInfoTopic.c_str(), 5);
-    rightCameraInfoPublisher = nh.advertise<sensor_msgs::CameraInfo>
-        (rightCameraInfoTopic.c_str(), 5);
+    IMAGE_SUB = nh.subscribe(input_image_topic, 2, &imageCallback);
+    LEFT_IMAGE_PUBLISHER = it.advertise(left_output_image_topic, 5);
+    RIGHT_IMAGE_PUBLISHER = it.advertise(right_output_image_topic, 5);
+    LEFT_CAMERA_INFO_PUBLISHER = nh.advertise<sensor_msgs::CameraInfo>(left_camera_info_topic, 5);
+    RIGHT_CAMERA_INFO_PUBLISHER = nh.advertise<sensor_msgs::CameraInfo>(right_camera_info_topic, 5);
 
     // Camera info managers.
-    ros::NodeHandle nh_left(leftCameraInfoManager);
-    ros::NodeHandle nh_right(rightCameraInfoManager);
+    ros::NodeHandle nh_left(left_camera_info_manager);
+    ros::NodeHandle nh_right(right_camera_info_manager);
     // Allocate and initialize camera info managers.
-    camera_info_manager::CameraInfoManager left_cinfo_(nh_left,"camera",leftCameraInfoURL);
-    camera_info_manager::CameraInfoManager right_cinfo_(nh_right,"camera",rightCameraInfoURL);
-    left_cinfo_.loadCameraInfo(leftCameraInfoURL);
-    right_cinfo_.loadCameraInfo(rightCameraInfoURL);
+    camera_info_manager::CameraInfoManager left_cinfo(nh_left, "camera", LEFT_CAMERA_INFO_URL);
+    camera_info_manager::CameraInfoManager right_cinfo(nh_right, "camera", RIGHT_CAMERA_INFO_URL);
+    left_cinfo.loadCameraInfo(LEFT_CAMERA_INFO_URL);
+    right_cinfo.loadCameraInfo(RIGHT_CAMERA_INFO_URL);
 
     // Pre-fill camera_info messages.
-    leftCameraInfoMsg = left_cinfo_.getCameraInfo();
-    rightCameraInfoMsg = right_cinfo_.getCameraInfo();
+    LEFT_CAMERA_INFO_MSG = left_cinfo.getCameraInfo();
+    RIGHT_CAMERA_INFO_MSG = right_cinfo.getCameraInfo();
 
     // Run node until cancelled.
     ros::spin();
