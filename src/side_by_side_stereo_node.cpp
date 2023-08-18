@@ -69,7 +69,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
     // If there are any subscribers to either output topic then publish images
     // on them.
     if (leftImagePublisher.getNumSubscribers() > 0 ||
-        rightImagePublisher.getNumSubscribers() > 0)
+        rightImagePublisher.getNumSubscribers() > 0 ||
+        leftCameraInfoPublisher.getNumSubscribers() > 0 ||
+        rightCameraInfoPublisher.getNumSubscribers() > 0)
+
     {
         // Define the relevant rectangles to crop.
         cv::Rect leftROI, rightROI;
