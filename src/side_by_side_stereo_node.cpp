@@ -93,35 +93,31 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
       cv::resize(rightImage, rightScaled, sz);
     }
 
-    // Publish.
+    // Publish images
     cv_bridge::CvImage cvImage;
     sensor_msgs::ImagePtr img;
     cvImage.encoding = msg->encoding;
     cvImage.header.stamp = msg->header.stamp;
-    if (leftImagePublisher.getNumSubscribers() > 0 || leftCameraInfoPublisher.getNumSubscribers() > 0)
-    {
-      if (leftFrame.empty())
-        leftFrame = msg->header.frame_id;
-      cvImage.image = use_scaled ? leftScaled : leftImage;
-      cvImage.header.frame_id = leftFrame;
-      img = cvImage.toImageMsg();
-      leftImagePublisher.publish(img);
-      leftCameraInfoMsg.header.stamp = img->header.stamp;
-      leftCameraInfoMsg.header.frame_id = leftFrame;
-      leftCameraInfoPublisher.publish(leftCameraInfoMsg);
-    }
-    if (rightImagePublisher.getNumSubscribers() > 0 || rightCameraInfoPublisher.getNumSubscribers() > 0)
-    {
-      if (rightFrame.empty())
-        rightFrame = msg->header.frame_id;
-      cvImage.image = use_scaled ? rightScaled : rightImage;
-      cvImage.header.frame_id = rightFrame;
-      img = cvImage.toImageMsg();
-      rightImagePublisher.publish(img);
-      rightCameraInfoMsg.header.stamp = img->header.stamp;
-      rightCameraInfoMsg.header.frame_id = rightFrame;
-      rightCameraInfoPublisher.publish(rightCameraInfoMsg);
-    }
+    // left image
+    if (leftFrame.empty())
+      leftFrame = msg->header.frame_id;
+    cvImage.image = use_scaled ? leftScaled : leftImage;
+    cvImage.header.frame_id = leftFrame;
+    img = cvImage.toImageMsg();
+    leftImagePublisher.publish(img);
+    leftCameraInfoMsg.header.stamp = img->header.stamp;
+    leftCameraInfoMsg.header.frame_id = leftFrame;
+    leftCameraInfoPublisher.publish(leftCameraInfoMsg);
+    // right image
+    if (rightFrame.empty())
+      rightFrame = msg->header.frame_id;
+    cvImage.image = use_scaled ? rightScaled : rightImage;
+    cvImage.header.frame_id = rightFrame;
+    img = cvImage.toImageMsg();
+    rightImagePublisher.publish(img);
+    rightCameraInfoMsg.header.stamp = img->header.stamp;
+    rightCameraInfoMsg.header.frame_id = rightFrame;
+    rightCameraInfoPublisher.publish(rightCameraInfoMsg);
   }
 }
 
